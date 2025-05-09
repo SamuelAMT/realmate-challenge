@@ -1,4 +1,5 @@
 from django.db import transaction
+from django.core.exceptions import ValidationError
 from conversation.models import Conversation
 
 
@@ -13,11 +14,11 @@ class ConversationService:
         Cria uma nova conversa com o ID especificado.
         Retorna a conversa criada ou None se já existir.
         """
-        if Conversation.objects.filter(id=conversation_id).exists():
+        if Conversation.objects.filter(conversation_id=conversation_id).exists():
             return None
 
         with transaction.atomic():
-            conversation = Conversation(id=conversation_id)
+            conversation = Conversation(conversation_id=conversation_id)
             conversation.save()
             return conversation
 
@@ -29,7 +30,7 @@ class ConversationService:
         """
         try:
             with transaction.atomic():
-                conversation = Conversation.objects.get(id=conversation_id)
+                conversation = Conversation.objects.get(conversation_id=conversation_id)
                 if conversation.state == Conversation.CLOSED:
                     return conversation  # Já está fechada
 

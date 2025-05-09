@@ -26,11 +26,11 @@ class MessageService:
         Raises:
             ValidationError: Se a mensagem não puder ser criada
         """
-        if Message.objects.filter(id=message_id).exists():
+        if Message.objects.filter(message_id=message_id).exists():
             return None
 
         try:
-            conversation = Conversation.objects.get(id=conversation_id)
+            conversation = Conversation.objects.get(conversation_id=conversation_id)
 
             if not conversation.is_open:
                 raise ValidationError(
@@ -39,7 +39,7 @@ class MessageService:
             # Cria a mensagem em caso da conversa estar aberta
             with transaction.atomic():
                 message = Message(
-                    id=message_id,
+                    message_id=message_id,
                     conversation=conversation,
                     content=content,
                     direction=direction

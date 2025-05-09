@@ -1,198 +1,209 @@
+from django.db import transaction
 from django.core.exceptions import ValidationError
-from rest_framework import status
-from conversation.services.conversation_service import ConversationService
-from message.services.message_service import MessageService
-from message.models import Message
 import logging
+import uuid
+
+from conversation.models import Conversation
+from message.models import Message
 
 logger = logging.getLogger(__name__)
 
 
 class WebhookService:
     """
-    Serviço para processamento de eventos de webhook.
+    Serviço para processar webhooks recebidos.
+    Manipula a lógica de negócio para diferentes tipos de eventos.
     """
 
-    def process_event(self, event_type, data, timestamp=None):
+    EVENT_NEW_CONVERSATION = "NEW_CONVERSATION"
+    EVENT_NEW_MESSAGE = "NEW_MESSAGE"
+    EVENT_CLOSE_CONVERSATION = "CLOSE_CONVERSATION"
+
+    @classmethod
+    def process_webhook(cls, webhook_data):
         """
-        Processa um evento de webhook com base no seu tipo.
+        Processa o webhook com base no tipo de evento.
 
         Args:
-            event_type (str): Tipo do evento (NEW_CONVERSATION, NEW_MESSAGE, CLOSE_CONVERSATION)
+            webhook_data (dict): Dados do webhook recebido
+
+        Returns:
+            dict: Resultado do processamento com chaves 'success' e 'message'
+
+        Raises:
+            ValidationError: Se os dados do webhook forem inválidos
+        """
+        if not webhook_data:
+            raise ValidationError("Empty webhook data")
+
+        event_type = webhook_data.get('type')
+        data = webhook_data.get('data')
+
+        if not event_type or not data:
+            raise ValidationError(
+                "Missing required webhook fields: type or data")
+
+        # Roteamento do evento para o handler apropriado
+        if event_type == cls.EVENT_NEW_CONVERSATION:
+            return cls._handle_new_conversation(data)
+
+        elif event_type == cls.EVENT_NEW_MESSAGE:
+            return cls._handle_new_message(data)
+
+        elif event_type == cls.EVENT_CLOSE_CONVERSATION:
+            return cls._handle_close_conversation(data)
+
+        else:
+            raise ValidationError(f"Unsupported event type: {event_type}")
+
+    @classmethod
+    def _handle_new_conversation(cls, data):
+        """
+        Manipula evento de nova conversa.
+
+        Args:
             data (dict): Dados do evento
-            timestamp (str, optional): Timestamp do evento
 
         Returns:
-            dict: Contém a resposta e o status HTTP
+            dict: Resultado do processamento
         """
-        try:
-            if event_type == 'NEW_CONVERSATION':
-                return self._handle_new_conversation(data)
-            elif event_type == 'NEW_MESSAGE':
-                return self._handle_new_message(data)
-            elif event_type == 'CLOSE_CONVERSATION':
-                return self._handle_close_conversation(data)
-            else:
-                return {
-                    "response": {
-                        "error": f"Unsupported event type: {event_type}"},
-                    "status": status.HTTP_400_BAD_REQUEST
-                }
-        except ValidationError as e:
-            logger.error(f"Validation error in webhook processing: {str(e)}")
-            return {
-                "response": {"error": str(e)},
-                "status": status.HTTP_400_BAD_REQUEST
-            }
-        except Exception as e:
-            logger.exception(
-                f"Unexpected error in webhook processing: {str(e)}")
-            return {
-                "response": {"error": "An unexpected error occurred"},
-                "status": status.HTTP_500_INTERNAL_SERVER_ERROR
-            }
-
-    def _handle_new_conversation(self, data):
-        """
-        Processa o evento NEW_CONVERSATION.
-
-        Args:
-            data (dict): Dados do evento com o ID da conversa
-
-        Returns:
-            dict: Resposta e status HTTP
-        """
-        conversation_id = data.get('id')
-
-        if not conversation_id:
-            return {
-                "response": {"error": "Missing conversation ID"},
-                "status": status.HTTP_400_BAD_REQUEST
-            }
-
-        try:
-            conversation = ConversationService.create_conversation(
-                conversation_id)
-
-            if not conversation:
-                return {
-                    "response": {"error": "Conversation already exists"},
-                    "status": status.HTTP_409_CONFLICT
-                }
-
-            return {
-                "response": {"message": "Conversation created",
-                             "id": str(conversation.id)},
-                "status": status.HTTP_201_CREATED
-            }
-        except ValueError:
-            return {
-                "response": {"error": "Invalid conversation ID format"},
-                "status": status.HTTP_400_BAD_REQUEST
-            }
-
-    def _handle_new_message(self, data):
-        """
-        Processa o evento NEW_MESSAGE.
-
-        Args:
-            data (dict): Dados do evento com informações da mensagem
-
-        Returns:
-            dict: Resposta e status HTTP
-        """
-        message_id = data.get('id')
-        direction = data.get('direction')
-        content = data.get('content')
         conversation_id = data.get('conversation_id')
+        if not conversation_id:
+            raise ValidationError("Missing conversation ID")
 
-        # Validação dos campos obrigatórios
-        if not all([message_id, direction, content, conversation_id]):
+        try:
+            conversation_id = uuid.UUID(conversation_id)
+        except ValueError:
+            raise ValidationError("Invalid conversation ID format")
+
+        # Verifica se a conversa já existe
+        if Conversation.objects.filter(conversation_id=conversation_id).exists():
             return {
-                "response": {"error": "Missing required message fields"},
-                "status": status.HTTP_400_BAD_REQUEST
+                'success': False,
+                'message': f"Conversation {conversation_id} already exists"
             }
+
+        # Cria nova conversa
+        with transaction.atomic():
+            conversation = Conversation(conversation_id=conversation_id)
+            conversation.save()
+
+        return {
+            'success': True,
+            'message': f"Created new conversation with ID: {conversation_id}"
+        }
+
+    @classmethod
+    def _handle_new_message(cls, data):
+        """
+        Manipula evento de nova mensagem.
+
+        Args:
+            data (dict): Dados do evento
+
+        Returns:
+            dict: Resultado do processamento
+        """
+        message_id = data.get('message_id')
+        conversation_id = data.get('conversation_id')
+        content = data.get('content')
+        direction = data.get('direction')
+
+        if not all([message_id, conversation_id, content, direction]):
+            raise ValidationError("Missing required message fields")
+
+        try:
+            message_id = uuid.UUID(message_id)
+            conversation_id = uuid.UUID(conversation_id)
+        except ValueError:
+            raise ValidationError("Invalid UUID format")
 
         # Validação da direção
         if direction not in [Message.SENT, Message.RECEIVED]:
+            raise ValidationError(f"Invalid message direction: {direction}")
+
+        # Verifica se a mensagem já existe
+        if Message.objects.filter(message_id=message_id).exists():
             return {
-                "response": {
-                    "error": f"Invalid message direction: {direction}"},
-                "status": status.HTTP_400_BAD_REQUEST
+                'success': False,
+                'message': f"Message {message_id} already exists"
             }
 
         try:
-            try:
-                message = MessageService.create_message(message_id,
-                                                        conversation_id,
-                                                        content, direction)
+            # Recupera a conversa
+            conversation = Conversation.objects.get(conversation_id=conversation_id)
 
-                if not message:
-                    return {
-                        "response": {"error": "Message already exists"},
-                        "status": status.HTTP_409_CONFLICT
-                    }
-
+            if conversation.state == Conversation.CLOSED:
                 return {
-                    "response": {"message": "Message added",
-                                 "id": str(message.id)},
-                    "status": status.HTTP_201_CREATED
+                    'success': False,
+                    'message': f"Cannot add message to closed conversation {conversation_id}"
                 }
-            except ValidationError as e:
-                if "Conversation not found" in str(e):
-                    return {
-                        "response": {"error": "Conversation not found"},
-                        "status": status.HTTP_404_NOT_FOUND
-                    }
-                elif "closed conversation" in str(e).lower():
-                    return {
-                        "response": {
-                            "error": "Cannot add message to closed conversation"},
-                        "status": status.HTTP_400_BAD_REQUEST
-                    }
-                else:
-                    raise e
-        except ValueError:
+
+            with transaction.atomic():
+                message = Message(
+                    message_id=message_id,
+                    conversation=conversation,
+                    content=content,
+                    direction=direction
+                )
+                message.save()
+
             return {
-                "response": {"error": "Invalid UUID format"},
-                "status": status.HTTP_400_BAD_REQUEST
+                'success': True,
+                'message': f"Added message {message_id} to conversation {conversation_id}"
             }
 
-    def _handle_close_conversation(self, data):
+        except Conversation.DoesNotExist:
+            return {
+                'success': False,
+                'message': f"Conversation {conversation_id} not found"
+            }
+        except ValidationError as e:
+            return {
+                'success': False,
+                'message': str(e)
+            }
+
+    @classmethod
+    def _handle_close_conversation(cls, data):
         """
-        Processa o evento CLOSE_CONVERSATION.
+        Manipula evento de fechamento de conversa.
 
         Args:
-            data (dict): Dados do evento com o ID da conversa
+            data (dict): Dados do evento
 
         Returns:
-            dict: Resposta e status HTTP
+            dict: Resultado do processamento
         """
-        conversation_id = data.get('id')
-
+        conversation_id = data.get('conversation_id')
         if not conversation_id:
-            return {
-                "response": {"error": "Missing conversation ID"},
-                "status": status.HTTP_400_BAD_REQUEST
-            }
+            raise ValidationError("Missing conversation ID")
 
         try:
-            conversation = ConversationService.close_conversation(
-                conversation_id)
+            conversation_id = uuid.UUID(conversation_id)
+        except ValueError:
+            raise ValidationError("Invalid conversation ID format")
 
-            if not conversation:
+        try:
+            conversation = Conversation.objects.get(conversation_id=conversation_id)
+
+            if conversation.state == Conversation.CLOSED:
                 return {
-                    "response": {"error": "Conversation not found"},
-                    "status": status.HTTP_404_NOT_FOUND
+                    'success': False,
+                    'message': f"Conversation {conversation_id} is already closed"
                 }
 
+            # Fecha a conversa
+            with transaction.atomic():
+                conversation.close()
+
             return {
-                "response": {"message": "Conversation closed",
-                             "id": str(conversation.id)},
-                "status": status.HTTP_200_OK
+                'success': True,
+                'message': f"Closed conversation {conversation_id}"
             }
-        except ValueError:
+
+        except Conversation.DoesNotExist:
             return {
-                "response": {"error": "Invalid conversation ID format"},
-                "status": status.HTTP_400_BAD_REQUEST
+                'success': False,
+                'message': f"Conversation {conversation_id} not found"
             }

@@ -2,8 +2,11 @@ from django.shortcuts import render, get_object_or_404
 from rest_framework import generics
 from rest_framework.response import Response
 from rest_framework.exceptions import NotFound
+from drf_yasg.utils import swagger_auto_schema
+from drf_yasg import openapi
+
 from conversation.models import Conversation
-from conversation.api.schemas import ConversationDetailSerializer
+from conversation.api.schemas.conversation import ConversationDetailSerializer
 
 
 class ConversationDetailView(generics.RetrieveAPIView):
@@ -12,9 +15,18 @@ class ConversationDetailView(generics.RetrieveAPIView):
     """
     serializer_class = ConversationDetailSerializer
     lookup_field = 'conversation_id'
+    lookup_url_kwarg = 'conversation_id'
 
-    def get_queryset(self):
-        return Conversation.objects.all()
+    @swagger_auto_schema(
+        operation_summary="Recupera detalhes de uma conversa",
+        operation_description="Retorna informações da conversa e suas mensagens",
+        responses={
+            200: ConversationDetailSerializer,
+            404: "Conversa não encontrada"
+        }
+    )
+    def get(self, request, *args, **kwargs):
+        return super().get(request, *args, **kwargs)
 
     def get_object(self):
         """

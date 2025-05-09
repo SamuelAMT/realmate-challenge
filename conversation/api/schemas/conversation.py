@@ -10,8 +10,8 @@ class ConversationSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Conversation
-        fields = ['id', 'state', 'created_at', 'updated_at']
-        read_only_fields = ['id', 'created_at', 'updated_at']
+        fields = ['conversation_id', 'state', 'created_at', 'updated_at']
+        read_only_fields = ['conversation_id', 'created_at', 'updated_at']
 
 
 class MessageInConversationSerializer(serializers.ModelSerializer):
@@ -21,20 +21,20 @@ class MessageInConversationSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Message
-        fields = ['id', 'content', 'direction', 'timestamp']
-        read_only_fields = ['id', 'timestamp']
+        fields = ['message_id', 'content', 'direction', 'timestamp']
+        read_only_fields = ['message_id', 'timestamp']
 
 
 class ConversationDetailSerializer(serializers.ModelSerializer):
     """
     Serializador detalhado para o modelo Conversation, incluindo suas mensagens.
     """
-    messages = serializers.SerializerMethodField()
+    messages = MessageInConversationSerializer(many=True, read_only=True)
 
     class Meta:
         model = Conversation
-        fields = ['id', 'state', 'created_at', 'updated_at', 'messages']
-        read_only_fields = ['id', 'created_at', 'updated_at']
+        fields = ['conversation_id', 'state', 'created_at', 'updated_at', 'messages']
+        read_only_fields = ['conversation_id', 'created_at', 'updated_at']
 
     def get_messages(self, obj):
         """Retorna todas as mensagens da conversa, ordenadas por timestamp."""

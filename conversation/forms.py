@@ -10,4 +10,3 @@ class ConversationForm(forms.ModelForm):
     class Meta:
         model = Conversation
         fields = ['state']
-
