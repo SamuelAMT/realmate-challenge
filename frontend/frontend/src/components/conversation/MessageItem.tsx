@@ -1,6 +1,6 @@
-import { Message } from "@/database/schema";
+import type { Message } from "@/database/schema";
 import { cn, formatMessageTime } from "@/lib/utils";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+// import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Check } from "lucide-react";
 
 interface MessageItemProps {

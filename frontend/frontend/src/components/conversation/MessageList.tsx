@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { Message } from "@/database/schema";
+import type { Message } from "@/database/schema";
 import { MessageItem } from "./MessageItem";
 import { ScrollArea } from "@/components/ui/scroll-area";
 

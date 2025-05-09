@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
-import { Conversation, mockConversations } from "@/database/schema";
-import { fetchConversation } from "@/lib/api";
+import type { Conversation } from "@/database/schema";
+import { mockConversations } from "@/database/schema";
+// import { fetchConversation } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 
 export function useConversation(conversationId: string) {
