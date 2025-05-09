@@ -69,7 +69,7 @@ Após iniciar o servidor, acesse a documentação Swagger em:
     "type": "NEW_CONVERSATION",
     "timestamp": "2025-02-21T10:20:41.349308",
     "data": {
-        "id": "6a41b347-8d80-4ce9-84ba-7af66f369f6a"
+        "conversation_id": "6a41b347-8d80-4ce9-84ba-7af66f369f6a"
     }
 }
 ```
@@ -80,7 +80,7 @@ Após iniciar o servidor, acesse a documentação Swagger em:
     "type": "NEW_MESSAGE",
     "timestamp": "2025-02-21T10:20:42.349308",
     "data": {
-        "id": "49108c71-4dca-4af3-9f32-61bc745926e2",
+        "message_id": "49108c71-4dca-4af3-9f32-61bc745926e2",
         "direction": "RECEIVED",
         "content": "Olá, tudo bem?",
         "conversation_id": "6a41b347-8d80-4ce9-84ba-7af66f369f6a"
@@ -94,7 +94,7 @@ Após iniciar o servidor, acesse a documentação Swagger em:
     "type": "NEW_MESSAGE",
     "timestamp": "2025-02-21T10:20:44.349308",
     "data": {
-        "id": "16b63b04-60de-4257-b1a1-20a5154abc6d",
+        "message_id": "16b63b04-60de-4257-b1a1-20a5154abc6d",
         "direction": "SENT",
         "content": "Tudo ótimo e você?",
         "conversation_id": "6a41b347-8d80-4ce9-84ba-7af66f369f6a"
@@ -108,7 +108,7 @@ Após iniciar o servidor, acesse a documentação Swagger em:
     "type": "CLOSE_CONVERSATION",
     "timestamp": "2025-02-21T10:20:45.349308",
     "data": {
-        "id": "6a41b347-8d80-4ce9-84ba-7af66f369f6a"
+        "conversation_id": "6a41b347-8d80-4ce9-84ba-7af66f369f6a"
     }
 }
 ```
