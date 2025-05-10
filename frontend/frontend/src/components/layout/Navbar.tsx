@@ -5,7 +5,7 @@ import { Bell, User } from "lucide-react";
 export function Navbar() {
   return (
     <header className="bg-whatsapp-darkGreen text-white p-4 shadow-md">
-      <div className="container flex items-center justify-between">
+      <div className="w-full flex items-center justify-between">
         <div className="flex items-center gap-2">
           <h1 className="text-xl font-bold">WhatsApp Management</h1>
         </div>

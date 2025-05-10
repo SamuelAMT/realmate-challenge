@@ -13,10 +13,13 @@ export function Sidebar() {
   const { conversations, isLoading } = useConversations();
   const [searchQuery, setSearchQuery] = useState("");
 
-  const filteredConversations = conversations.filter(conv => {
-    // In a real app, you'd search messages content too
+  if (!conversations && !isLoading) {
+  return <div>Error loading conversations.</div>;
+  }
+
+  const filteredConversations = conversations?.filter(conv => {
     return conv.conversation_id.includes(searchQuery.toLowerCase());
-  });
+  }) ?? [];
 
   return (
     <div className="w-full md:w-[350px] border-r border-gray-200 bg-white h-[calc(100vh-4rem)] flex flex-col">
@@ -45,7 +48,7 @@ export function Sidebar() {
           ))
         ) : filteredConversations.length > 0 ? (
           filteredConversations.map((conversation) => {
-            const lastMessage = conversation.messages[conversation.messages.length - 1];
+            const lastMessage = conversation.messages?.[conversation.messages.length - 1];
             return (
               <Link
                 to={`/conversations/${conversation.conversation_id}`}

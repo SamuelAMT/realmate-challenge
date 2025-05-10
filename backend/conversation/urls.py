@@ -3,6 +3,7 @@ from rest_framework.routers import DefaultRouter
 
 from conversation.api.routes.conversation import ConversationViewSet
 from message.api.routes.message import MessageListCreateAPIView
+from conversation.views import ConversationViewSet
 
 app_name = "conversation"
 

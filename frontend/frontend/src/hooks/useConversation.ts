@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
-import type { Conversation } from "@/database/schema";
-import { mockConversations } from "@/database/schema";
-// import { fetchConversation } from "@/lib/api";
+import type { Conversation, Message } from "@/database/schema";
+import { fetchConversation, sendMessage as apiSendMessage } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 
 export function useConversation(conversationId: string) {
@@ -16,21 +15,8 @@ export function useConversation(conversationId: string) {
         setIsLoading(true);
         setError(null);
 
-        // For demo purposes, using mock data
-        // In production, use the fetchConversation function
-        // const data = await fetchConversation(conversationId);
-
-        // Mock API delay
-        await new Promise(resolve => setTimeout(resolve, 800));
-
-        const data = mockConversations.find(
-          conv => conv.conversation_id === conversationId
-        );
-
-        if (!data) {
-          throw new Error("Conversation not found");
-        }
-
+        // Use the actual API endpoint
+        const data = await fetchConversation(conversationId);
         setConversation(data);
       } catch (err) {
         setError(err instanceof Error ? err : new Error("Failed to load conversation"));
@@ -44,15 +30,17 @@ export function useConversation(conversationId: string) {
       }
     };
 
-    loadConversation();
+    if (conversationId) {
+      loadConversation();
+    }
   }, [conversationId, toast]);
 
   const sendMessage = async (content: string) => {
     if (!conversation) return;
 
-    const newMessage = {
+    const tempMessage: Message = {
       message_id: `temp-${Date.now()}`,
-      direction: "SENT" as const,
+      direction: "SENT",
       content,
       conversation_id: conversationId,
       timestamp: new Date().toISOString(),
@@ -63,29 +51,40 @@ export function useConversation(conversationId: string) {
       if (!prev) return prev;
       return {
         ...prev,
-        messages: [...prev.messages, newMessage],
+        messages: [...prev.messages, tempMessage],
       };
     });
 
-    // In production, call API to send message
-    // try {
-    //   const sentMessage = await sendMessage(conversationId, content);
-    //   // Update with server response if needed
-    // } catch (err) {
-    //   // Handle error, revert optimistic update
-    //   toast({
-    //     title: "Error",
-    //     description: "Failed to send message",
-    //     variant: "destructive",
-    //   });
-    //   setConversation(prev => {
-    //     if (!prev) return prev;
-    //     return {
-    //       ...prev,
-    //       messages: prev.messages.filter(msg => msg.message_id !== newMessage.message_id),
-    //     };
-    //   });
-    // }
+    // Call the API to send the message
+    try {
+      const sentMessage = await apiSendMessage(conversationId, content);
+
+      // Replace the temporary message with the real one from the server
+      setConversation(prev => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          messages: prev.messages.map(msg =>
+            msg.message_id === tempMessage.message_id ? sentMessage : msg
+          ),
+        };
+      });
+    } catch (err) {
+      // Handle error, revert optimistic update
+      toast({
+        title: "Error",
+        description: "Failed to send message",
+        variant: "destructive",
+      });
+
+      setConversation(prev => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          messages: prev.messages.filter(msg => msg.message_id !== tempMessage.message_id),
+        };
+      });
+    }
   };
 
   return {

@@ -43,6 +43,17 @@ class WebhookService:
             raise ValidationError(
                 "Missing required webhook fields: type or data")
 
+        # In case the API sends 'id' instead of 'conversation_id' for conversation events
+        if event_type in [cls.EVENT_NEW_CONVERSATION,
+                          cls.EVENT_CLOSE_CONVERSATION]:
+            if 'id' in data and 'conversation_id' not in data:
+                data['conversation_id'] = data['id']
+
+            # For messages, map 'id' to 'message_id'
+        if event_type == cls.EVENT_NEW_MESSAGE:
+            if 'id' in data and 'message_id' not in data:
+                data['message_id'] = data['id']
+
         # Roteamento do evento para o handler apropriado
         if event_type == cls.EVENT_NEW_CONVERSATION:
             return cls._handle_new_conversation(data)

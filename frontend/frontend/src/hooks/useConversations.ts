@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import type { Conversation } from "@/database/schema";
-import { mockConversations } from "@/database/schema";
-// import { fetchConversations } from "@/lib/api";
+import { fetchConversations } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 
 export function useConversations() {
@@ -16,14 +15,9 @@ export function useConversations() {
         setIsLoading(true);
         setError(null);
 
-        // For demo purposes, using mock data
-        // In production, use the fetchConversations function
-        // const data = await fetchConversations();
-
-        // Mock API delay
-        await new Promise(resolve => setTimeout(resolve, 800));
-
-        setConversations(mockConversations);
+        // Use the actual API endpoint
+        const data = await fetchConversations();
+        setConversations(data);
       } catch (err) {
         setError(err instanceof Error ? err : new Error("Failed to load conversations"));
         toast({
