@@ -24,7 +24,7 @@ class WebhookViewTestCase(TestCase):
             "type": "NEW_CONVERSATION",
             "timestamp": "2025-02-21T10:20:41.349308",
             "data": {
-                "id": self.conversation_id
+                "conversation_id": self.conversation_id
             }
         }
 
@@ -37,20 +37,20 @@ class WebhookViewTestCase(TestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(Conversation.objects.count(), 1)
 
-        conversation = Conversation.objects.get(id=self.conversation_id)
+        conversation = Conversation.objects.get(conversation_id=self.conversation_id)
         self.assertEqual(conversation.state, Conversation.OPEN)
 
     def test_new_message_webhook(self):
         """Testa o processamento de um webhook de nova mensagem"""
         # Primeiro cria a conversa
-        Conversation.objects.create(id=self.conversation_id)
+        Conversation.objects.create(conversation_id=self.conversation_id)
 
         # Payload para nova mensagem
         payload = {
             "type": "NEW_MESSAGE",
             "timestamp": "2025-02-21T10:20:42.349308",
             "data": {
-                "id": self.message_id,
+                "message_id": self.message_id,
                 "direction": "RECEIVED",
                 "content": "Olá, tudo bem?",
                 "conversation_id": self.conversation_id
@@ -66,21 +66,21 @@ class WebhookViewTestCase(TestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(Message.objects.count(), 1)
 
-        message = Message.objects.get(id=self.message_id)
+        message = Message.objects.get(message_id=self.message_id)
         self.assertEqual(message.content, "Olá, tudo bem?")
         self.assertEqual(message.direction, Message.RECEIVED)
 
     def test_close_conversation_webhook(self):
         """Testa o processamento de um webhook de fechamento de conversa"""
         # Primeiro cria a conversa
-        Conversation.objects.create(id=self.conversation_id)
+        Conversation.objects.create(conversation_id=self.conversation_id)
 
         # Payload para fechar conversa
         payload = {
             "type": "CLOSE_CONVERSATION",
             "timestamp": "2025-02-21T10:20:45.349308",
             "data": {
-                "id": self.conversation_id
+                "conversation_id": self.conversation_id
             }
         }
 
@@ -92,13 +92,13 @@ class WebhookViewTestCase(TestCase):
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
-        conversation = Conversation.objects.get(id=self.conversation_id)
+        conversation = Conversation.objects.get(conversation_id=self.conversation_id)
         self.assertEqual(conversation.state, Conversation.CLOSED)
 
     def test_message_to_closed_conversation(self):
         """Testa que não é possível adicionar mensagens a conversas fechadas via webhook"""
         # Cria e fecha a conversa
-        conversation = Conversation.objects.create(id=self.conversation_id)
+        conversation = Conversation.objects.create(conversation_id=self.conversation_id)
         conversation.close()
 
         # Tenta adicionar mensagem
@@ -106,7 +106,7 @@ class WebhookViewTestCase(TestCase):
             "type": "NEW_MESSAGE",
             "timestamp": "2025-02-21T10:20:42.349308",
             "data": {
-                "id": self.message_id,
+                "message_id": self.message_id,
                 "direction": "RECEIVED",
                 "content": "Esta mensagem não deve ser aceita",
                 "conversation_id": self.conversation_id

@@ -59,3 +59,35 @@ class ConversationViewSet(viewsets.ModelViewSet):
             return super().get_object()
         except Exception as e:
             raise NotFound(detail="Conversation not found")
+
+    @swagger_auto_schema(
+        methods=['post'],
+        responses={
+            200: openapi.Response('Conversation closed successfully',
+                                  ConversationSerializer),
+            404: 'Conversation not found',
+            400: 'Bad request'
+        }
+    )
+    @action(detail=True, methods=['post'])
+    def close(self, request, conversation_id=None):
+        """
+        Close a conversation by its ID.
+        """
+        try:
+            conversation = ConversationService.close_conversation(
+                conversation_id)
+
+            if conversation:
+                serializer = self.get_serializer(conversation)
+                return Response(serializer.data, status=status.HTTP_200_OK)
+            else:
+                return Response(
+                    {"status": "error", "message": "Conversation not found"},
+                    status=status.HTTP_404_NOT_FOUND
+                )
+        except Exception as e:
+            return Response(
+                {"status": "error", "message": str(e)},
+                status=status.HTTP_400_BAD_REQUEST
+            )

@@ -11,7 +11,7 @@ class ConversationModelTestCase(TestCase):
         """Configuração para cada teste"""
         self.conversation_id = uuid.uuid4()
         self.conversation = Conversation.objects.create(
-            id=self.conversation_id
+            conversation_id=self.conversation_id
         )
 
     def test_conversation_creation(self):

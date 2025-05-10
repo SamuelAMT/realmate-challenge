@@ -15,7 +15,6 @@ export function useConversations() {
         setIsLoading(true);
         setError(null);
 
-        // Use the actual API endpoint
         const data = await fetchConversations();
         setConversations(data);
       } catch (err) {

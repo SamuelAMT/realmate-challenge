@@ -9,10 +9,21 @@ import { useNavigate } from "react-router-dom";
 interface ConversationHeaderProps {
   conversation?: Conversation;
   isLoading?: boolean;
+  onClose?: () => Promise<void>;
 }
 
-export function ConversationHeader({ conversation, isLoading = false }: ConversationHeaderProps) {
+export function ConversationHeader({conversation, isLoading = false, onClose }: ConversationHeaderProps) {
   const navigate = useNavigate();
+
+  const handleClose = async () => {
+    if (window.confirm("Are you sure you want to close this conversation?")) {
+      try {
+        await onClose?.();
+      } catch (error) {
+        console.error("Failed to close conversation:", error);
+      }
+    }
+  };
 
   return (
     <div className="bg-white border-b border-gray-200 p-3 flex items-center justify-between sticky top-0 z-10">
@@ -61,6 +72,17 @@ export function ConversationHeader({ conversation, isLoading = false }: Conversa
         <Button variant="ghost" size="icon">
           <MoreVertical className="h-5 w-5" />
         </Button>
+
+        {conversation?.status === "OPEN" && onClose && (
+        <Button
+          variant="outline"
+          onClick={handleClose}
+          disabled={isLoading}
+          className="text-red-600 hover:text-red-700 hover:bg-red-50"
+        >
+          Close Conversation
+        </Button>
+      )}
       </div>
     </div>
   );

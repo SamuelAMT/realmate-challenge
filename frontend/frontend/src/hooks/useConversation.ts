@@ -1,6 +1,10 @@
 import { useState, useEffect } from "react";
 import type { Conversation, Message } from "@/database/schema";
-import { fetchConversation, sendMessage as apiSendMessage } from "@/lib/api";
+import {
+  fetchConversation,
+  sendMessage as apiSendMessage,
+  closeConversation as apiCloseConversation,
+} from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 
 export function useConversation(conversationId: string) {
@@ -15,7 +19,6 @@ export function useConversation(conversationId: string) {
         setIsLoading(true);
         setError(null);
 
-        // Use the actual API endpoint
         const data = await fetchConversation(conversationId);
         setConversation(data);
       } catch (err) {
@@ -36,7 +39,7 @@ export function useConversation(conversationId: string) {
   }, [conversationId, toast]);
 
   const sendMessage = async (content: string) => {
-    if (!conversation) return;
+    if (!conversationId || !conversation) return;
 
     const tempMessage: Message = {
       message_id: `temp-${Date.now()}`,
@@ -55,11 +58,9 @@ export function useConversation(conversationId: string) {
       };
     });
 
-    // Call the API to send the message
     try {
       const sentMessage = await apiSendMessage(conversationId, content);
 
-      // Replace the temporary message with the real one from the server
       setConversation(prev => {
         if (!prev) return prev;
         return {
@@ -70,7 +71,6 @@ export function useConversation(conversationId: string) {
         };
       });
     } catch (err) {
-      // Handle error, revert optimistic update
       toast({
         title: "Error",
         description: "Failed to send message",
@@ -87,10 +87,34 @@ export function useConversation(conversationId: string) {
     }
   };
 
+  const closeConversation = async () => {
+    if (!conversation) return;
+
+    try {
+      const closedConversation = await apiCloseConversation(conversationId);
+      setConversation(closedConversation);
+
+      toast({
+        title: "Success",
+        description: "Conversation closed successfully",
+      });
+
+      return closedConversation;
+    } catch (err) {
+      toast({
+        title: "Error",
+        description: "Failed to close conversation",
+        variant: "destructive",
+      });
+      throw err;
+    }
+  };
+
   return {
     conversation,
     isLoading,
     error,
     sendMessage,
+    closeConversation,
   };
 }

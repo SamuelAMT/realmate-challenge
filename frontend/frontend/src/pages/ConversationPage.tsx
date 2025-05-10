@@ -13,7 +13,7 @@ import { useToast } from "@/hooks/use-toast";
 
 const ConversationPage = () => {
   const { id } = useParams<{ id: string }>();
-  const { conversation, isLoading, error, sendMessage } = useConversation(id || "");
+  const { conversation, isLoading, error, sendMessage, closeConversation } = useConversation(id || "");
   const [isCreating, setIsCreating] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -50,7 +50,12 @@ const ConversationPage = () => {
         <div className="flex-1 flex flex-col">
           {id ? (
             <>
-              <ConversationHeader conversation={conversation || undefined} isLoading={isLoading} />
+              <ConversationHeader
+                  conversation={conversation || undefined}
+                  isLoading={isLoading}
+                  onClose={conversation && conversation.status === "OPEN" ?
+                    async () => { await closeConversation(); } : undefined}
+              />
 
               {error ? (
                 <div className="flex-1 flex items-center justify-center">
@@ -67,7 +72,8 @@ const ConversationPage = () => {
                   />
                   <MessageInput
                     onSendMessage={sendMessage}
-                    disabled={isLoading || !conversation}
+                    disabled={isLoading}
+                    conversationStatus={conversation?.status}
                   />
                 </>
               )}

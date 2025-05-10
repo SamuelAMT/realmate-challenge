@@ -15,19 +15,19 @@ class ConversationAPITestCase(TestCase):
         self.client = APIClient()
         self.conversation_id = uuid.uuid4()
         self.conversation = Conversation.objects.create(
-            id=self.conversation_id
+            conversation_id=self.conversation_id
         )
 
         # Cria algumas mensagens para a conversa
         self.message1 = Message.objects.create(
-            id=uuid.uuid4(),
+            message_id=uuid.uuid4(),
             conversation=self.conversation,
             content="Mensagem 1",
             direction=Message.RECEIVED
         )
 
         self.message2 = Message.objects.create(
-            id=uuid.uuid4(),
+            message_id=uuid.uuid4(),
             conversation=self.conversation,
             content="Mensagem 2",
             direction=Message.SENT
@@ -43,7 +43,7 @@ class ConversationAPITestCase(TestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         # Verifica os campos da conversa
-        self.assertEqual(response.data['id'], str(self.conversation_id))
+        self.assertEqual(response.data['conversation_id'], str(self.conversation_id))
         self.assertEqual(response.data['state'], Conversation.OPEN)
 
         # Verifica as mensagens

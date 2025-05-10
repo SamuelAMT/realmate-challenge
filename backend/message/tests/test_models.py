@@ -12,12 +12,12 @@ class MessageModelTestCase(TestCase):
         """Configuração para cada teste"""
         self.conversation_id = uuid.uuid4()
         self.conversation = Conversation.objects.create(
-            id=self.conversation_id
+            conversation_id=self.conversation_id
         )
 
         self.message_id = uuid.uuid4()
         self.message = Message.objects.create(
-            id=self.message_id,
+            message_id=self.message_id,
             conversation=self.conversation,
             content="Test message content",
             direction=Message.RECEIVED
@@ -36,7 +36,7 @@ class MessageModelTestCase(TestCase):
         # Tenta criar uma nova mensagem na conversa fechada
         with self.assertRaises(ValidationError):
             Message.objects.create(
-                id=uuid.uuid4(),
+                message_id=uuid.uuid4(),
                 conversation=self.conversation,
                 content="This should fail",
                 direction=Message.SENT
