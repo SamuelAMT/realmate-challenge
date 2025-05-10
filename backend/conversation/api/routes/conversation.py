@@ -1,23 +1,26 @@
-from rest_framework import generics
-from rest_framework.response import Response
+from rest_framework import viewsets
 from rest_framework.exceptions import NotFound
 
 from conversation.models import Conversation
-from conversation.api.schemas.conversation import ConversationDetailSerializer
+from conversation.api.schemas.conversation import ConversationSerializer, \
+    ConversationDetailSerializer
 
 
-class ConversationDetailAPIView(generics.RetrieveAPIView):
+class ConversationViewSet(viewsets.ReadOnlyModelViewSet):
     """
-    API View para recuperar detalhes de uma conversa específica.
-    GET /conversations/{conversation_id}/
+    API ViewSet for listing or retrieving conversations.
     """
-    serializer_class = ConversationDetailSerializer
     queryset = Conversation.objects.all()
     lookup_field = 'conversation_id'
 
+    def get_serializer_class(self):
+        if self.action == 'list':
+            return ConversationSerializer
+        return ConversationDetailSerializer
+
     def get_object(self):
         """
-        Sobrescreve o método get_object para lidar com UUIDs e erros de forma elegante
+        Override get_object to handle UUIDs and errors gracefully
         """
         try:
             return super().get_object()

@@ -1,6 +1,8 @@
 from django.urls import path
-from webhook.views import WebhookProcessorView
+from webhook.api.routes.webhook import WebhookProcessorAPIView
+
+app_name = "webhook"
 
 urlpatterns = [
-    path('', WebhookProcessorView.as_view(), name='webhook-processor'),
+    path("", WebhookProcessorAPIView.as_view(), name="webhook-processor"),
 ]
